@@ -14,6 +14,9 @@ export default function App() {
   const [tool, setTool] = React.useState<"draw" | "move" | "split" | "delete">(
     "draw",
   );
+  const [prospectivePoint, setProspectivePoint] = React.useState<
+    [number, number] | null
+  >(null);
   const [movingIndex, setMovingIndex] = React.useState<number | null>(null);
   const [points, setPoints] = React.useState<[number, number][]>([]);
   const loadBlob = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,6 +56,11 @@ export default function App() {
   const deleteAt = (i: number) => {
     setPoints((points) => points.filter((_, j) => j !== i));
   };
+
+  React.useEffect(() => {
+    if (tool !== "move") setMovingIndex(null);
+    if (tool !== "draw") setProspectivePoint(null);
+  }, [tool]);
 
   return (
     <div className="App">
@@ -117,6 +125,16 @@ export default function App() {
           src={img}
           hidden={!img}
           onClick={tool === "draw" ? addPoint : undefined}
+          onMouseMove={
+            tool === "draw"
+              ? (e: React.MouseEvent) => {
+                  setProspectivePoint(getXY(e));
+                }
+              : undefined
+          }
+          onMouseOut={
+            tool === "draw" ? () => setProspectivePoint(null) : undefined
+          }
         />
         <svg
           width={imgRef.current?.width}
@@ -137,6 +155,20 @@ export default function App() {
             fillOpacity={0.2}
             style={{ pointerEvents: "none" }}
           />
+          {tool === "draw" && points.length > 1 && prospectivePoint ? (
+            <polygon
+              points={[...points, prospectivePoint]
+                .map(([x, y]) => `${x},${y}`)
+                .join(" ")}
+              fill="white"
+              stroke="black"
+              strokeDasharray="5, 5"
+              strokeWidth={1}
+              fillOpacity={0.2}
+              strokeOpacity={0.5}
+              style={{ pointerEvents: "none" }}
+            />
+          ) : null}
           {points.map(([x, y], i) => (
             <circle
               cx={x}
@@ -145,7 +177,9 @@ export default function App() {
               key={i}
               fill={
                 tool == "move" || tool == "split"
-                  ? "lime"
+                  ? movingIndex === i
+                    ? "black"
+                    : "lime"
                   : i === points.length - 1
                     ? "white"
                     : "red"

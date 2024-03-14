@@ -1,5 +1,11 @@
 body {
   margin: 0;
+}
+
+body,
+input,
+button,
+textarea {
   font-size: 10pt;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
     "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
