@@ -1,5 +1,6 @@
 body {
   margin: 0;
+  font-size: 10pt;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
     "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
@@ -7,4 +8,16 @@ body {
 
 code {
   font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+header {
+  background: #dfe4ea;
+  border-bottom: 1px solid #70a1ff;
+  padding: 5px;
+  display: flex;
+  gap: 1em;
+}
+
+.spacer {
+  flex-grow: 1;
 }
