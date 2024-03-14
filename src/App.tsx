@@ -1,9 +1,19 @@
 import React from "react";
 
+function getXY(e: React.MouseEvent): [number, number] {
+  const snap = e.shiftKey ? 10 : 1;
+  const offset = e.currentTarget?.getBoundingClientRect();
+  const x = Math.round((e.clientX - offset?.left ?? 0) / snap) * snap;
+  const y = Math.round((e.clientY - offset?.top ?? 0) / snap) * snap;
+  return [x, y];
+}
+
 export default function App() {
   const imgRef = React.useRef<HTMLImageElement>(null);
   const [img, setImg] = React.useState<string>();
-  const [tool, setTool] = React.useState<"draw" | "move">("draw");
+  const [tool, setTool] = React.useState<"draw" | "move" | "split" | "delete">(
+    "draw",
+  );
   const [movingIndex, setMovingIndex] = React.useState<number | null>(null);
   const [points, setPoints] = React.useState<[number, number][]>([]);
   const loadBlob = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -13,24 +23,35 @@ export default function App() {
     if (file) reader.readAsDataURL(file);
   };
   const addPoint = function (e: React.MouseEvent) {
-    const offset = e.currentTarget?.getBoundingClientRect();
-    const x = e.clientX - offset?.left;
-    const y = e.clientY - offset?.top;
+    const [x, y] = getXY(e);
     setPoints((points) => [...points, [x, y]]);
   };
   const handleMove = function (e: React.MouseEvent) {
     if (movingIndex === null) {
       return;
     }
-    const snap = e.shiftKey ? 10 : 1;
-    const offset = e.currentTarget?.getBoundingClientRect();
-    const x = Math.round((e.clientX - offset?.left) / snap) * snap;
-    const y = Math.round((e.clientY - offset?.top) / snap) * snap;
+    const [x, y] = getXY(e);
     setPoints((points) => {
       const newPoints = [...points];
       newPoints[movingIndex] = [x, y];
       return newPoints;
     });
+  };
+
+  function createSplitAfter(index: number) {
+    setPoints((points) => {
+      const [x1, y1] = points[index]!;
+      const [x2, y2] = points[(index + 1) % points.length]!;
+      return [
+        ...points.slice(0, index + 1),
+        [(x1 + x2) / 2, (y1 + y2) / 2],
+        ...points.slice(index + 1),
+      ];
+    });
+  }
+
+  const deleteAt = (i: number) => {
+    setPoints((points) => points.filter((_, j) => j !== i));
   };
 
   return (
@@ -48,9 +69,24 @@ export default function App() {
         </button>
         <button
           onClick={() => setTool("move")}
+          disabled={!points.length}
           style={{ fontWeight: tool === "move" ? "bold" : undefined }}
         >
           Move
+        </button>
+        <button
+          onClick={() => setTool("split")}
+          disabled={!points.length}
+          style={{ fontWeight: tool === "split" ? "bold" : undefined }}
+        >
+          Split
+        </button>
+        <button
+          onClick={() => setTool("delete")}
+          disabled={!points.length}
+          style={{ fontWeight: tool === "delete" ? "bold" : undefined }}
+        >
+          Delete
         </button>
         <div>&middot;</div>
         <button
@@ -60,9 +96,13 @@ export default function App() {
         >
           Clear
         </button>
-        <button onClick={() => setPoints((points) => [...points.slice(0, -1)])}>
-          Undo
-        </button>
+        {tool === "draw" ? (
+          <button
+            onClick={() => setPoints((points) => [...points.slice(0, -1)])}
+          >
+            Undo last point
+          </button>
+        ) : null}
         <div className="spacer"></div>
         <textarea value={JSON.stringify(points)} readOnly />
       </header>
@@ -71,6 +111,7 @@ export default function App() {
           style={{
             position: "absolute",
             cursor: tool == "draw" ? "crosshair" : undefined,
+            userSelect: "none",
           }}
           ref={imgRef}
           src={img}
@@ -102,11 +143,24 @@ export default function App() {
               cy={y}
               r={7}
               key={i}
-              fill={tool == "move" ? "lime" : "red"}
-              stroke={tool == "move" ? "black" : undefined}
-              style={{ cursor: "move" }}
+              fill={
+                tool == "move" || tool == "split"
+                  ? "lime"
+                  : i === points.length - 1
+                    ? "white"
+                    : "red"
+              }
+              stroke={"black"}
+              style={{ cursor: tool == "move" ? "move" : "pointer" }}
               onMouseDown={
                 tool === "move" ? () => setMovingIndex(i) : undefined
+              }
+              onClick={
+                tool === "split"
+                  ? () => createSplitAfter(i)
+                  : tool === "delete"
+                    ? () => deleteAt(i)
+                    : undefined
               }
             />
           ))}
